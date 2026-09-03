@@ -79,11 +79,13 @@ def generate_random_ip(hot_cidrs=None):
             
     return "1.1.1.1" # 兜底返回，防止崩溃
 
-def test_ip(ip, check_api_url, timeout=5.0):
+def test_ip(ip, check_api_url, check_api_key="", timeout=5.0):
     start_time = time.time()
     try:
         url = f"{check_api_url}?proxyip={ip}"
-        
+        if check_api_key:
+            url += f"&key={check_api_key}"
+
         resp = requests.get(url, timeout=timeout).json()
         if resp.get("success") is True:
             connect_time = int((time.time() - start_time) * 1000)
@@ -91,8 +93,8 @@ def test_ip(ip, check_api_url, timeout=5.0):
             # 提取数据中心 (dataCenter)、colo 或 country，优先用 dataCenter
             colo = resp.get("dataCenter") or resp.get("colo") or resp.get("country") or "UNK"
             
-            # 如果 API 返回了 latencyMs 或者 latency，优先用 API 测算的延迟，否则用整个请求的耗时
-            latency = resp.get("latencyMs") or resp.get("tcpDuration") or connect_time
+            # 如果 API 返回了 latencyMs / responseTime / tcpDuration，优先用 API 测算的延迟，否则用整个请求的耗时
+            latency = resp.get("responseTime") or resp.get("latencyMs") or resp.get("tcpDuration") or connect_time
             
             return {"ip": ip, "latency": latency, "colo": colo}
     except Exception:
@@ -173,7 +175,8 @@ def main():
     else:
         print(f"Target Regions dynamically set to: {target_regions}")
     
-    check_api_url = "https://proxyip.xxxxxxxx.nyc.mn/check"
+    check_api_url = os.environ.get("CHECK_API_URL", "https://check.proxyip.cmliussss.net/check")
+    check_api_key = os.environ.get("CHECK_API_KEY", "")
     sync_count = int(os.environ.get("SYNC_COUNT", 10))
     scan_count = int(os.environ.get("SCAN_COUNT", 2000))
     
@@ -229,7 +232,7 @@ def main():
         # === 并发线程配置区 ===
         # 控制同时发起多少个测速请求，默认 50，太高容易导致测速接口崩溃
         with concurrent.futures.ThreadPoolExecutor(max_workers=50) as executor:
-            futures = {executor.submit(test_ip, ip, check_api_url): ip for ip in ips_to_test}
+            futures = {executor.submit(test_ip, ip, check_api_url, check_api_key): ip for ip in ips_to_test}
             for future in concurrent.futures.as_completed(futures):
                 result = future.result()
                 if result:
