@@ -33,8 +33,6 @@ jobs:
           CF_EMAIL: ${{ secrets.CF_EMAIL }}
           SYNC_COUNT: '5' # Number of IPs to keep in DNS
           SCAN_COUNT: '2000' # Number of IPs to test per run
-          CHECK_API_URL: ${{ secrets.CHECK_API_URL }}
-          CHECK_API_KEY: ${{ secrets.CHECK_API_KEY }}
         run: python scripts/cf_scanner_sync.py
 
       - name: Commit and Push IP Log
