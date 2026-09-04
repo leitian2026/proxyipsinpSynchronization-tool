@@ -82,12 +82,14 @@ def generate_random_ip(hot_cidrs=None):
 def test_ip(ip, check_api_url, check_api_key="", timeout=5.0):
     start_time = time.time()
     try:
-        url = f"{check_api_url}?proxyip={ip}"
+        separator = "&" if "?" in check_api_url else "?"
+        url = f"{check_api_url}{separator}proxyip={ip}"
         if check_api_key:
             url += f"&key={check_api_key}"
 
         resp = requests.get(url, timeout=timeout).json()
-        if resp.get("success") is True:
+        # 同时兼容 success:true 和 status:"success" 两种 API 返回格式
+        if resp.get("success") is True or resp.get("status") == "success":
             connect_time = int((time.time() - start_time) * 1000)
             
             # 提取数据中心 (dataCenter)、colo 或 country，优先用 dataCenter
@@ -97,8 +99,8 @@ def test_ip(ip, check_api_url, check_api_key="", timeout=5.0):
             latency = resp.get("responseTime") or resp.get("latencyMs") or resp.get("tcpDuration") or connect_time
             
             return {"ip": ip, "latency": latency, "colo": colo}
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"[CHECK ERROR] {ip}: {e}")
     return None
 
 def sync_to_cloudflare(api_token, zone_id, target_domain, best_ips, cf_email):
