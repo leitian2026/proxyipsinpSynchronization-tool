@@ -175,7 +175,7 @@ def main():
     else:
         print(f"Target Regions dynamically set to: {target_regions}")
     
-    check_api_url = os.environ.get("CHECK_API_URL", "https://velvet-spruce-181.uf0.workers.dev/check")
+    check_api_url = os.environ.get("CHECK_API_URL", "https://check.velvet-spruce-181.uf0.workers.dev/check")
     check_api_key = os.environ.get("CHECK_API_KEY", "")
     sync_count = int(os.environ.get("SYNC_COUNT", 10))
     scan_count = int(os.environ.get("SCAN_COUNT", 2000))
