@@ -84,7 +84,8 @@ def test_ip(ip, check_api_url, check_api_key="", timeout=5.0):
     try:
         url = f"{check_api_url}?proxyip={ip}"
         if check_api_key:
-            url += f"&key={check_api_key}"
+            # 兼容两种鉴权参数，官方用 token，部分自建用 key
+            url += f"&token={check_api_key}&key={check_api_key}"
 
         resp = requests.get(url, timeout=timeout).json()
         if resp.get("success") is True:
@@ -94,7 +95,25 @@ def test_ip(ip, check_api_url, check_api_key="", timeout=5.0):
             colo = resp.get("dataCenter") or resp.get("colo") or resp.get("country") or "UNK"
             
             # 如果 API 返回了 latencyMs / responseTime / tcpDuration，优先用 API 测算的延迟，否则用整个请求的耗时
-            latency = resp.get("responseTime") or resp.get("latencyMs") or resp.get("tcpDuration") or connect_time
+            # 修复：responseTime 可能是 "1320ms" 字符串，需要转成 int，否则排序会错
+            def _to_int(v):
+                if v is None:
+                    return None
+                if isinstance(v, (int, float)):
+                    return int(v)
+                if isinstance(v, str):
+                    m = __import__("re").search(r"(\d+)", v)
+                    if m:
+                        return int(m.group(1))
+                return None
+            
+            latency = (
+                _to_int(resp.get("responseTime")) or
+                _to_int(resp.get("latencyMs")) or
+                _to_int(resp.get("tcpDuration")) or
+                _to_int(resp.get("latency")) or
+                connect_time
+            )
             
             return {"ip": ip, "latency": latency, "colo": colo}
     except Exception:
@@ -175,7 +194,7 @@ def main():
     else:
         print(f"Target Regions dynamically set to: {target_regions}")
     
-    check_api_url = os.environ.get("CHECK_API_URL", "https://check.velvet-spruce-181.uf0.workers.dev/check")
+    check_api_url = os.environ.get("CHECK_API_URL", "https://velvet-spruce-181.uf0.workers.dev/check")
     check_api_key = os.environ.get("CHECK_API_KEY", "")
     sync_count = int(os.environ.get("SYNC_COUNT", 10))
     scan_count = int(os.environ.get("SCAN_COUNT", 2000))
