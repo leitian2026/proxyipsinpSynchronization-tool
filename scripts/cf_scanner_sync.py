@@ -163,6 +163,7 @@ def main():
     zone_id = os.environ.get("CF_ZONE_ID")
     base_domain = os.environ.get("CF_TARGET_DOMAIN")
     cf_email = os.environ.get("CF_EMAIL")
+    check_api_url = os.environ.get("CHECK_API_URL")
     
     region_input = DEFAULT_REGIONS
     target_regions = [r.strip().upper() for r in region_input.split(",") if r.strip()]
@@ -173,7 +174,10 @@ def main():
     else:
         print(f"Target Regions dynamically set to: {target_regions}")
     
-    check_api_url = "https://py-xxxxxxxx-ij.uf0.workers.dev/check"
+    if not check_api_url:
+        print("Error: CHECK_API_URL 未设置")
+        exit(1)
+    
     sync_count = int(os.environ.get("SYNC_COUNT", 10))
     scan_count = int(os.environ.get("SCAN_COUNT", 2000))
     
@@ -202,8 +206,6 @@ def main():
         
     print(f"Generating {scan_count} random Cloudflare IPs...")
     ips_to_test = [generate_random_ip(hot_cidrs) for _ in range(scan_count)]
-    
-    print(f"Testing IPs concurrently via {check_api_url}...")
     
     valid_ips_by_region = {}
     if not is_scan_all:
