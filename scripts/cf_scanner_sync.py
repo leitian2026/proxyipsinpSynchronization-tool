@@ -173,7 +173,7 @@ def main():
     else:
         print(f"Target Regions dynamically set to: {target_regions}")
     
-    check_api_url = "https://op.xxxxxxxx.myoo.ccwu.cc/check"
+    check_api_url = "https://py-xxxxxxxx-ij.uf0.workers.dev/check"
     sync_count = int(os.environ.get("SYNC_COUNT", 10))
     scan_count = int(os.environ.get("SCAN_COUNT", 2000))
     
